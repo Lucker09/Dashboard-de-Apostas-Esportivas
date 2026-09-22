@@ -6,14 +6,14 @@ spring:
     name: bets-dashboard
 
   datasource:
-    url: jdbc:mysql://localhost:3306/bets_dashboard?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: Lucker09@
+    url: ${DB_URL:jdbc:mysql://localhost:3306/bets_dashboard?useSSL=false&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
