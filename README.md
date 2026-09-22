@@ -83,19 +83,3 @@ A aplicação permite que o apostador registre suas apostas, acompanhe seu hist�
   * Bean Validation (`jakarta.validation`)
 * **Banco de Dados:** MySQL 8.x
 * **Gerenciador de Build:** Maven
-
----
-
-## 📍 Endpoints da API
-
-### 1. Usuários (`/api/users` ou `/api/usuarios`)
-
-#### Cadastrar Usuário
-`POST /api/users`
-
-**Request Body:**
-```json
-{
-  "email": "usuario@email.com",
-  "passwordHash": "senha123"
-}
