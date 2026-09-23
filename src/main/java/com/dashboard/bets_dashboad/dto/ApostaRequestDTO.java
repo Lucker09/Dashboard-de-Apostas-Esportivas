@@ -12,9 +12,6 @@ import java.math.BigDecimal;
 @Setter
 public class ApostaRequestDTO {
 
-    @NotNull(message = "O ID do usuário é obrigatório")
-    private Long userId;
-
     @NotBlank(message = "A descrição não pode estar em branco")
     private String descricao;
 

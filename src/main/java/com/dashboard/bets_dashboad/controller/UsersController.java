@@ -1,7 +1,9 @@
 package com.dashboard.bets_dashboad.controller;
 
-import com.dashboard.bets_dashboad.model.User;
-import com.dashboard.bets_dashboad.repository.UserRepository;
+import com.dashboard.bets_dashboad.dto.UserRequestDTO;
+import com.dashboard.bets_dashboad.dto.UserResponseDTO;
+import com.dashboard.bets_dashboad.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,15 +12,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/users")
 public class UsersController {
 
-    private final UserRepository usuarioRepository;
+    private final UserService userService;
 
-    public UsersController(UserRepository usuarioRepository) {
-        this.usuarioRepository = usuarioRepository;
+    public UsersController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<User> criar(@RequestBody User user) {
-        User newUser = usuarioRepository.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+    public ResponseEntity<UserResponseDTO> criarUsuario(@RequestBody @Valid UserRequestDTO dto) {
+        UserResponseDTO response = userService.criarUsuario(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
