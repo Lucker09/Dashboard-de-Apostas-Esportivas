@@ -2,18 +2,13 @@ package com.dashboard.bets_dashboard.controller;
 
 import com.dashboard.bets_dashboard.dto.ApostaRequestDTO;
 import com.dashboard.bets_dashboard.dto.ApostaResponseDTO;
-import com.dashboard.bets_dashboard.dto.DashboardMetricsDTO;
-import com.dashboard.bets_dashboard.dto.LiquidarApostaDTO;
 import com.dashboard.bets_dashboard.model.User;
 import com.dashboard.bets_dashboard.service.ApostaService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,51 +21,25 @@ public class ApostaController {
         this.apostaService = apostaService;
     }
 
-    // 1. Criar Aposta (ID obtido automaticamente do Token)
-    @PostMapping
-    public ResponseEntity<ApostaResponseDTO> criarAposta(
-            @AuthenticationPrincipal User usuarioLogado,
-            @RequestBody @Valid ApostaRequestDTO dto) {
-
-        ApostaResponseDTO response = apostaService.criarAposta(usuarioLogado.getId(), dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    // 2. Listar Apostas Paginadas do Utilizador Autenticado (mais recentes primeiro)
     @GetMapping
     public ResponseEntity<Page<ApostaResponseDTO>> listarApostas(
-            @AuthenticationPrincipal User usuarioLogado,
-            @PageableDefault(size = 10, sort = {"dataCriacao", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
+            Authentication authentication,
+            Pageable pageable) {
 
-        Page<ApostaResponseDTO> apostas = apostaService.listarApostasPorUsuario(usuarioLogado.getId(), pageable);
+        User user = (User) authentication.getPrincipal();
+        Page<ApostaResponseDTO> apostas = apostaService.listarApostasPorUsuario(user.getId(), pageable);
         return ResponseEntity.ok(apostas);
     }
 
-    // 3. Liquidar Aposta (a verificação de dono e de estado é feita no service)
-    @PatchMapping("/{id}/liquidar")
-    public ResponseEntity<ApostaResponseDTO> liquidarAposta(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User usuarioLogado,
-            @RequestBody @Valid LiquidarApostaDTO dto) {
+    @PostMapping
+    public ResponseEntity<ApostaResponseDTO> criarAposta(
+            Authentication authentication,
+            @RequestBody @Valid ApostaRequestDTO dto) {
 
-        ApostaResponseDTO response = apostaService.liquidarAposta(id, usuarioLogado.getId(), dto);
-        return ResponseEntity.ok(response);
+        User user = (User) authentication.getPrincipal();
+        ApostaResponseDTO novaAposta = apostaService.criarAposta(user.getId(), dto);
+        return ResponseEntity.status(201).body(novaAposta);
     }
 
-    // 4. Obter Dashboard do Utilizador Autenticado
-    @GetMapping("/dashboard")
-    public ResponseEntity<DashboardMetricsDTO> obterDashboard(@AuthenticationPrincipal User usuarioLogado) {
-        DashboardMetricsDTO dashboard = apostaService.calcularMetricasDashboard(usuarioLogado.getId());
-        return ResponseEntity.ok(dashboard);
-    }
-
-    // 5. Buscar Aposta por ID do Utilizador Autenticado
-    @GetMapping("/{id}")
-    public ResponseEntity<ApostaResponseDTO> buscarPorId(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User usuarioLogado) {
-
-        ApostaResponseDTO aposta = apostaService.buscarPorId(id, usuarioLogado.getId());
-        return ResponseEntity.ok(aposta);
-    }
+    // Outros endpoints...
 }

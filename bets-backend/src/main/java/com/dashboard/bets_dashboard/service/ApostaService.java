@@ -32,7 +32,7 @@ public class ApostaService {
         this.userRepository = userRepository;
     }
 
-    // 1. Listar apostas paginadas do usuário
+    // 1. Listar apostas paginadas do usuário (caso precise de paginação no futuro)
     @Transactional(readOnly = true)
     public Page<ApostaResponseDTO> listarApostasPorUsuario(Long userId, Pageable pageable) {
         if (!userRepository.existsById(userId)) {
@@ -43,7 +43,20 @@ public class ApostaService {
                 .map(this::converterParaResponseDTO);
     }
 
-    // 2. Criar Aposta (userId injetado via Controller / JWT)
+    // 1.5. Listar TODAS as apostas do usuário em formato de Lista (Ideal para o Dashboard/Gráficos)
+    @Transactional(readOnly = true)
+    public List<ApostaResponseDTO> listarTodasApostasPorUsuario(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("Usuário não encontrado com ID: " + userId);
+        }
+
+        List<Aposta> apostas = apostaRepository.findByUserId(userId);
+        return apostas.stream()
+                .map(this::converterParaResponseDTO)
+                .toList();
+    }
+
+    // 2. Criar Aposta
     @Transactional
     public ApostaResponseDTO criarAposta(Long userId, ApostaRequestDTO dto) {
         User user = userRepository.findById(userId)
@@ -60,7 +73,7 @@ public class ApostaService {
         return converterParaResponseDTO(salva);
     }
 
-    // 3. Liquidar Aposta (só o dono, e só uma vez)
+    // 3. Liquidar Aposta
     @Transactional
     public ApostaResponseDTO liquidarAposta(Long apostaId, Long userId, LiquidarApostaDTO dto) {
         StatusAposta novoStatus = dto.getStatus();
@@ -69,7 +82,6 @@ public class ApostaService {
             throw new IllegalArgumentException("Não é possível liquidar uma aposta para o status PENDENTE.");
         }
 
-        // Se a aposta não existir ou for de outro utilizador, a resposta é a mesma (404)
         Aposta aposta = apostaRepository.buscarParaLiquidacao(apostaId, userId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Aposta não encontrada."));
 
@@ -82,7 +94,7 @@ public class ApostaService {
                     .multiply(aposta.getOdd())
                     .setScale(2, RoundingMode.HALF_UP);
             case RED -> BigDecimal.ZERO;
-            case ANULADA -> aposta.getValorApostado(); // Estorno
+            case ANULADA -> aposta.getValorApostado();
             case CASHOUT -> {
                 if (dto.getValorResgatado() == null || dto.getValorResgatado().compareTo(BigDecimal.ZERO) < 0) {
                     throw new IllegalArgumentException("É obrigatório informar o valor resgatado no CASHOUT.");
@@ -101,8 +113,6 @@ public class ApostaService {
     }
 
     // 4. Métricas consolidadas do Dashboard
-    // Regras: apostas PENDENTES e ANULADAS ficam fora do total apostado/ROI.
-    // Taxa de acerto = GREEN / (GREEN + RED); CASHOUT não entra nesse cálculo.
     @Transactional(readOnly = true)
     public DashboardMetricsDTO calcularMetricasDashboard(Long userId) {
         List<Aposta> apostas = apostaRepository.findByUserId(userId);
