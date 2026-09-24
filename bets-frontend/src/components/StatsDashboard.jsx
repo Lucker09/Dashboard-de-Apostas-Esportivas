@@ -49,7 +49,6 @@ export default function StatsDashboard() {
         fetchStats();
     }, []);
 
-    // A cor fica junto do status, para não mudar quando alguma fatia é filtrada
     const statusData = [
         { name: 'Ganhas', value: Number(stats.apostasGanhas || 0), color: '#10B981' },
         { name: 'Perdidas', value: Number(stats.apostasPerdidas || 0), color: '#EF4444' },
@@ -60,7 +59,7 @@ export default function StatsDashboard() {
 
     if (loading) {
         return (
-            <div className="p-6 text-center text-gray-500">
+            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
                 Carregando estatísticas...
             </div>
         );
@@ -69,99 +68,99 @@ export default function StatsDashboard() {
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
             <div>
-                <h1 className="text-2xl font-bold text-gray-800">Painel de Estatísticas</h1>
-                <p className="text-sm text-gray-500">
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Painel de Estatísticas</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                     Dados calculados diretamente pelo backend.
                 </p>
             </div>
 
             {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 p-3 text-sm text-red-700 dark:text-red-300">
                     {error}
                 </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <p className="text-sm text-gray-500">Lucro / Prejuízo</p>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Lucro / Prejuízo</p>
                     <p className={`text-2xl font-semibold ${
-                        Number(stats.profitAndLossTotal) >= 0 ? 'text-green-600' : 'text-red-600'
+                        Number(stats.profitAndLossTotal) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     }`}>
                         {formatMoney(stats.profitAndLossTotal)}
                     </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <p className="text-sm text-gray-500">ROI</p>
-                    <p className="text-2xl font-semibold text-blue-600">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">ROI</p>
+                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">
                         {Number(stats.roiPercentage || 0).toFixed(2)}%
                     </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <p className="text-sm text-gray-500">Taxa de Acerto</p>
-                    <p className="text-2xl font-semibold text-purple-600">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Taxa de Acerto</p>
+                    <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
                         {Number(stats.winRatePercentage || 0).toFixed(2)}%
                     </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <p className="text-sm text-gray-500">Total de Apostas</p>
-                    <p className="text-2xl font-semibold text-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total de Apostas</p>
+                    <p className="text-2xl font-semibold text-gray-700 dark:text-gray-200">
                         {stats.totalApostas}
                     </p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-lg font-medium text-gray-700 mb-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h2 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-4">
                         Resumo financeiro
                     </h2>
 
                     <div className="space-y-4">
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Total apostado</span>
-                            <strong>{formatMoney(stats.totalApostado)}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Total apostado</span>
+                            <strong className="text-gray-800 dark:text-gray-100">{formatMoney(stats.totalApostado)}</strong>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Total retornado</span>
-                            <strong>{formatMoney(stats.totalRetornado)}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Total retornado</span>
+                            <strong className="text-gray-800 dark:text-gray-100">{formatMoney(stats.totalRetornado)}</strong>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Apostas ganhas</span>
-                            <strong className="text-green-600">{stats.apostasGanhas}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Apostas ganhas</span>
+                            <strong className="text-green-600 dark:text-green-400">{stats.apostasGanhas}</strong>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Apostas perdidas</span>
-                            <strong className="text-red-600">{stats.apostasPerdidas}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Apostas perdidas</span>
+                            <strong className="text-red-600 dark:text-red-400">{stats.apostasPerdidas}</strong>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Cash-out</span>
-                            <strong className="text-blue-600">{stats.apostasCashout}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Cash-out</span>
+                            <strong className="text-blue-600 dark:text-blue-400">{stats.apostasCashout}</strong>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Apostas anuladas</span>
-                            <strong className="text-gray-600">{stats.apostasAnuladas}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Apostas anuladas</span>
+                            <strong className="text-gray-600 dark:text-gray-300">{stats.apostasAnuladas}</strong>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-500">Apostas pendentes</span>
-                            <strong className="text-yellow-600">{stats.apostasPendentes}</strong>
+                            <span className="text-gray-500 dark:text-gray-400">Apostas pendentes</span>
+                            <strong className="text-yellow-600 dark:text-yellow-400">{stats.apostasPendentes}</strong>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                             Pendentes e anuladas não entram no total apostado nem no ROI.
                         </p>
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
-                    <h2 className="text-lg font-medium text-gray-700 mb-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2">
+                    <h2 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-4">
                         Status das Apostas
                     </h2>
 
                     <div className="h-72 flex items-center justify-center">
                         {statusData.length === 0 ? (
-                            <p className="text-gray-400">Ainda não existem apostas suficientes para exibir o gráfico.</p>
+                            <p className="text-gray-400 dark:text-gray-500">Ainda não existem apostas suficientes para exibir o gráfico.</p>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -179,7 +178,9 @@ export default function StatsDashboard() {
                                             <Cell key={entry.name} fill={entry.color} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#f3f4f6' }}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         )}
@@ -187,11 +188,11 @@ export default function StatsDashboard() {
                 </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-lg font-medium text-gray-700 mb-2">
+            <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
                     Evolução do lucro
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                     O backend atual fornece as métricas consolidadas, mas ainda não possui
                     um endpoint de histórico por data. Por isso, nenhum dado fictício é
                     exibido aqui.

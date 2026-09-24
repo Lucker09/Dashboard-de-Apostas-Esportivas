@@ -48,8 +48,6 @@ export default function BetsTable() {
     }, []);
 
     useEffect(() => {
-        // A mudança de página dispara a sincronização com a API.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadBets(page);
     }, [page, loadBets]);
 
@@ -69,9 +67,8 @@ export default function BetsTable() {
             setIsModalOpen(false);
             setNewBet(EMPTY_BET);
 
-            // As apostas mais recentes ficam na primeira página
             if (page !== 0) {
-                setPage(0); // o useEffect recarrega a lista
+                setPage(0);
             } else {
                 await loadBets(0);
             }
@@ -108,11 +105,11 @@ export default function BetsTable() {
 
     const getStatusBadge = (status) => {
         const badges = {
-            GREEN: ['Green', 'text-green-700 bg-green-100'],
-            RED: ['Red', 'text-red-700 bg-red-100'],
-            CASHOUT: ['Cash-out', 'text-blue-700 bg-blue-100'],
-            ANULADA: ['Anulada', 'text-gray-700 bg-gray-100'],
-            PENDENTE: ['Pendente', 'text-yellow-700 bg-yellow-100'],
+            GREEN: ['Green', 'text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-950/60'],
+            RED: ['Red', 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/60'],
+            CASHOUT: ['Cash-out', 'text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60'],
+            ANULADA: ['Anulada', 'text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800'],
+            PENDENTE: ['Pendente', 'text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-950/60'],
         };
 
         const [label, classes] = badges[status] || badges.PENDENTE;
@@ -128,8 +125,8 @@ export default function BetsTable() {
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Minhas Apostas</h1>
-                    <p className="text-sm text-gray-500">
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Minhas Apostas</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                         Gestão e registo de apostas conectados ao banco de dados.
                     </p>
                 </div>
@@ -143,16 +140,16 @@ export default function BetsTable() {
             </div>
 
             {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 p-3 text-sm text-red-700 dark:text-red-300">
                     {error}
                 </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                        <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-100">
+                        <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
                             <th className="p-4">Data</th>
                             <th className="p-4">Descrição</th>
                             <th className="p-4">Odd</th>
@@ -164,28 +161,28 @@ export default function BetsTable() {
                         </tr>
                         </thead>
 
-                        <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
                         {loading ? (
                             <tr>
-                                <td colSpan="8" className="p-6 text-center text-gray-400">
+                                <td colSpan="8" className="p-6 text-center text-gray-400 dark:text-gray-500">
                                     A carregar apostas...
                                 </td>
                             </tr>
                         ) : bets.length === 0 ? (
                             <tr>
-                                <td colSpan="8" className="p-6 text-center text-gray-400">
+                                <td colSpan="8" className="p-6 text-center text-gray-400 dark:text-gray-500">
                                     Nenhuma aposta registada.
                                 </td>
                             </tr>
                         ) : (
                             bets.map((bet) => (
-                                <tr key={bet.id} className="hover:bg-gray-50/50 transition">
-                                    <td className="p-4 text-gray-500">
+                                <tr key={bet.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition">
+                                    <td className="p-4 text-gray-500 dark:text-gray-400">
                                         {bet.dataCriacao
                                             ? new Date(bet.dataCriacao).toLocaleDateString('pt-BR')
                                             : 'N/A'}
                                     </td>
-                                    <td className="p-4 font-medium text-gray-800">{bet.descricao}</td>
+                                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{bet.descricao}</td>
                                     <td className="p-4 font-semibold">
                                         {Number(bet.odd).toFixed(2)}
                                     </td>
@@ -195,10 +192,10 @@ export default function BetsTable() {
                                     </td>
                                     <td className={`p-4 font-medium ${
                                         Number(bet.profitAndLoss) > 0
-                                            ? 'text-green-600'
+                                            ? 'text-green-600 dark:text-green-400'
                                             : Number(bet.profitAndLoss) < 0
-                                                ? 'text-red-600'
-                                                : 'text-gray-500'
+                                                ? 'text-red-600 dark:text-red-400'
+                                                : 'text-gray-500 dark:text-gray-400'
                                     }`}>
                                         {bet.status === 'PENDENTE' ? '—' : formatMoney(bet.profitAndLoss)}
                                     </td>
@@ -210,14 +207,14 @@ export default function BetsTable() {
                                                 <button
                                                     disabled={saving}
                                                     onClick={() => handleLiquidate(bet.id, 'GREEN')}
-                                                    className="bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                                                    className="bg-green-100 dark:bg-green-950 hover:bg-green-200 dark:hover:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
                                                 >
                                                     Green
                                                 </button>
                                                 <button
                                                     disabled={saving}
                                                     onClick={() => handleLiquidate(bet.id, 'RED')}
-                                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                                                    className="bg-red-100 dark:bg-red-950 hover:bg-red-200 dark:hover:bg-red-900 text-red-700 dark:text-red-300 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
                                                 >
                                                     Red
                                                 </button>
@@ -227,20 +224,20 @@ export default function BetsTable() {
                                                         setCashoutBet(bet);
                                                         setCashoutValue('');
                                                     }}
-                                                    className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                                                    className="bg-blue-100 dark:bg-blue-950 hover:bg-blue-200 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
                                                 >
                                                     Cash-out
                                                 </button>
                                                 <button
                                                     disabled={saving}
                                                     onClick={() => handleLiquidate(bet.id, 'ANULADA')}
-                                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                                                    className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
                                                 >
                                                     Anulada
                                                 </button>
                                             </div>
                                         ) : (
-                                            <span className="text-xs text-gray-400 italic">Liquidada</span>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500 italic">Liquidada</span>
                                         )}
                                     </td>
                                 </tr>
@@ -250,21 +247,21 @@ export default function BetsTable() {
                     </table>
                 </div>
 
-                <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-sm text-gray-600">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
                     <span>Página {page + 1} de {totalPages || 1}</span>
 
                     <div className="space-x-2">
                         <button
                             onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
                             disabled={page === 0 || loading}
-                            className="px-3 py-1 border border-gray-200 rounded bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                            className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                         >
                             Anterior
                         </button>
                         <button
                             onClick={() => setPage((prev) => prev + 1)}
                             disabled={page + 1 >= totalPages || loading}
-                            className="px-3 py-1 border border-gray-200 rounded bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                            className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                         >
                             Próxima
                         </button>
@@ -273,26 +270,26 @@ export default function BetsTable() {
             </div>
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
-                        <h2 className="text-lg font-bold text-gray-800">Criar Nova Aposta</h2>
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6 space-y-4 border border-gray-100 dark:border-gray-700">
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Criar Nova Aposta</h2>
 
                         <form onSubmit={handleCreateBet} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Descrição</label>
                                 <input
                                     type="text"
                                     required
                                     value={newBet.descricao}
                                     onChange={(e) => setNewBet({ ...newBet, descricao: e.target.value })}
-                                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                     placeholder="Ex: Flamengo vs Fluminense - Vitória"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Odd</label>
+                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Odd</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -300,12 +297,12 @@ export default function BetsTable() {
                                         required
                                         value={newBet.odd}
                                         onChange={(e) => setNewBet({ ...newBet, odd: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Valor Apostado (R$)</label>
+                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Valor Apostado (R$)</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -313,7 +310,7 @@ export default function BetsTable() {
                                         required
                                         value={newBet.valorApostado}
                                         onChange={(e) => setNewBet({ ...newBet, valorApostado: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                     />
                                 </div>
                             </div>
@@ -322,7 +319,7 @@ export default function BetsTable() {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                                    className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
                                 >
                                     Cancelar
                                 </button>
@@ -340,16 +337,16 @@ export default function BetsTable() {
             )}
 
             {cashoutBet && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
-                        <h2 className="text-lg font-bold text-gray-800">Registrar Cash-out</h2>
-                        <p className="text-sm text-gray-500">
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6 space-y-4 border border-gray-100 dark:border-gray-700">
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Registrar Cash-out</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             Informe quanto foi resgatado nesta aposta.
                         </p>
 
                         <form onSubmit={handleCashoutSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Valor resgatado (R$)
                                 </label>
                                 <input
@@ -360,7 +357,7 @@ export default function BetsTable() {
                                     autoFocus
                                     value={cashoutValue}
                                     onChange={(e) => setCashoutValue(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                     placeholder="75.00"
                                 />
                             </div>
@@ -372,7 +369,7 @@ export default function BetsTable() {
                                         setCashoutBet(null);
                                         setCashoutValue('');
                                     }}
-                                    className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                                    className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
                                 >
                                     Cancelar
                                 </button>
