@@ -9,26 +9,27 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "transacoes")
 @Getter
 @Setter
 @NoArgsConstructor
-
-public class User {
+public class Transacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 150)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "password_hash",nullable = false)
-    private String password;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoTransacao tipo; // DEPOSITO ou SAQUE
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal valor;
 
     @Column(name = "data_criacao", nullable = false, updatable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
-
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal saldo = BigDecimal.ZERO;
 }

@@ -11,24 +11,36 @@ import {
     ReferenceLine,
     Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, Target, Award, Activity, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Award, Activity, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { betsService } from '../services/betsService';
+import { transacaoService } from '../services/transacaoService';
 
 export default function StatsDashboard() {
     const [timeRange, setTimeRange] = useState('7'); // '7', '30', '365', 'all'
     const [userBets, setUserBets] = useState([]);
+    const [transacoes, setTransacoes] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Carregar dados reais da API ao montar o componente
+    // Carregar dados reais de apostas e transações ao montar o componente
     useEffect(() => {
         async function fetchDashboardData() {
             try {
                 setLoading(true);
-                const response = await betsService.getAllBets();
-                const apostasLista = Array.isArray(response) ? response : (response.content || []);
+
+                // Buscar apostas e transações em paralelo
+                const [responseBets, responseTransacoes] = await Promise.all([
+                    betsService.getAllBets(),
+                    transacaoService.listarTransacoes().catch(() => []) // Fallback caso ocorra erro nas transações
+                ]);
+
+                const apostasLista = Array.isArray(responseBets) ? responseBets : (responseBets.content || []);
                 setUserBets(apostasLista);
+
+                const transacoesLista = Array.isArray(responseTransacoes) ? responseTransacoes : [];
+                setTransacoes(transacoesLista);
+
             } catch (error) {
-                console.error("Erro ao carregar apostas para o painel:", error);
+                console.error("Erro ao carregar dados para o painel:", error);
             } finally {
                 setLoading(false);
             }
@@ -37,7 +49,7 @@ export default function StatsDashboard() {
         fetchDashboardData();
     }, []);
 
-    // 1. Filtrar apostas com base no período selecionado (7 dias, 30 dias, 365 dias ou Todo o período)
+    // 1. Filtrar apostas com base no período selecionado
     const filterBetsByRange = () => {
         if (timeRange === 'all') return userBets;
 
@@ -59,19 +71,28 @@ export default function StatsDashboard() {
 
     const filteredBets = filterBetsByRange();
 
-    // 2. Calcular Métricas Reais Dinamicamente com base no filtro de tempo
+    // 2. Calcular Métricas Reais Dinamicamente
     const totalBets = filteredBets.length;
-
     const finishedBets = filteredBets.filter(b => b.status === 'GREEN' || b.status === 'RED' || b.status === 'CASHOUT');
     const wonBets = finishedBets.filter(b => b.status === 'GREEN');
 
     const winRate = finishedBets.length > 0 ? ((wonBets.length / finishedBets.length) * 100).toFixed(1) : 0;
-
     const totalProfit = filteredBets.reduce((acc, b) => acc + (b.profitAndLoss || 0), 0);
     const totalStaked = filteredBets.reduce((acc, b) => acc + (b.valorApostado || 0), 0);
     const roi = totalStaked > 0 ? ((totalProfit / totalStaked) * 100).toFixed(2) : 0;
 
-    // 3. Agrupar dados por dia para os Gráficos
+    // 3. Calcular Totais de Depósitos e Saques das Transações Reais
+    const totalDeposits = transacoes
+        .filter(t => t.tipo === 'DEPOSITO')
+        .reduce((acc, t) => acc + (t.valor || 0), 0);
+
+    const totalWithdrawals = transacoes
+        .filter(t => t.tipo === 'SAQUE')
+        .reduce((acc, t) => acc + (t.valor || 0), 0);
+
+    const netDeposits = totalDeposits - totalWithdrawals;
+
+    // 4. Agrupar dados por dia para os Gráficos
     const getChartData = () => {
         const map = {};
 
@@ -108,7 +129,7 @@ export default function StatsDashboard() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Painel de Estatísticas</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Desempenho calculado com base nas suas apostas reais</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Desempenho calculado com base nas suas apostas e transações reais</p>
                 </div>
 
                 <div className="flex flex-wrap bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 gap-1">
@@ -202,19 +223,21 @@ export default function StatsDashboard() {
 
             </div>
 
-            {/* Grid com os Gráficos */}
+            {/* Grid com os Gráficos e a Tabela de Transações Alinhados */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* 1. Gráfico de Ganhos/Perdas */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Ganhos/Perdas</h2>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Retornos menos o valor apostado por período</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Ganhos/Perdas</h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Retornos menos o valor apostado por período</p>
+                            </div>
+                            <span className={`text-xl font-bold ${totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                R$ {totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
                         </div>
-                        <span className={`text-xl font-bold ${totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                            R$ {totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
                     </div>
 
                     <div className="h-64 w-full pt-4">
@@ -243,47 +266,76 @@ export default function StatsDashboard() {
                     </div>
                 </div>
 
-                {/* 2. Card de Depósitos Líquidos (Aguardando Feature) */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between relative overflow-hidden">
+                {/* 2. Tabela de Depósitos e Saques (Alinhada perfeitamente com a altura h-64 do gráfico ao lado) */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
                     <div>
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start mb-2">
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Depósitos Líquidos</h2>
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
-                                        <Clock size={10} /> Em breve
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Balanço geral de entradas e saídas</p>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Depósitos e Saques</h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Histórico de movimentações da conta</p>
                             </div>
-                            <span className="text-xl font-bold text-gray-400 dark:text-gray-500">
-                                R$ 0,00
+                            <span className={`text-sm font-semibold px-2.5 py-1 rounded-lg ${netDeposits >= 0 ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400'}`}>
+                                Líquido: R$ {netDeposits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-gray-100 dark:border-gray-700">
-                        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl text-center opacity-75">
-                            <span className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Total de Depósitos</span>
-                            <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">R$ 0,00</span>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl text-center opacity-75">
-                            <span className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Total de Saques</span>
-                            <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">R$ 0,00</span>
-                        </div>
+                    <div className="h-64 w-full overflow-y-auto pr-1 pt-2">
+                        {transacoes.length > 0 ? (
+                            <table className="w-full text-left border-collapse text-sm">
+                                <thead>
+                                <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-[10px] uppercase tracking-wider sticky top-0">
+                                    <th className="p-2.5">Data</th>
+                                    <th className="p-2.5">Tipo</th>
+                                    <th className="p-2.5 text-right">Valor</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50 text-gray-700 dark:text-gray-300">
+                                {transacoes.map((t, index) => (
+                                    <tr key={t.id || index} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
+                                        <td className="p-2.5 text-xs text-gray-500 dark:text-gray-400">
+                                            {t.data ? new Date(t.data).toLocaleDateString('pt-BR') : 'N/A'}
+                                        </td>
+                                        <td className="p-2.5">
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                                    t.tipo === 'DEPOSITO'
+                                                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                                                        : 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400'
+                                                }`}>
+                                                    {t.tipo === 'DEPOSITO' ? <ArrowUpCircle size={10} /> : <ArrowDownCircle size={10} />}
+                                                    {t.tipo}
+                                                </span>
+                                        </td>
+                                        <td className={`p-2.5 text-right font-semibold text-xs ${
+                                            t.tipo === 'DEPOSITO' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                                        }`}>
+                                            {t.tipo === 'DEPOSITO' ? '+ ' : '- '}
+                                            R$ {(t.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                                Nenhuma transação registada.
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* 3. Gráfico de Valor Apostado */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 md:col-span-2">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Valor Apostado</h2>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Volume total colocado em apostas no período selecionado</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 md:col-span-2 flex flex-col justify-between">
+                    <div>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Valor Apostado</h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Volume total colocado em apostas no período selecionado</p>
+                            </div>
+                            <span className="text-xl font-bold text-gray-900 dark:text-white">
+                                R$ {totalStakedSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
                         </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">
-                            R$ {totalStakedSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
                     </div>
 
                     <div className="h-64 w-full pt-4">

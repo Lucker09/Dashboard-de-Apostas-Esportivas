@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -20,14 +20,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        const isAuthRequest = error.config?.url?.startsWith('/api/auth/');
+        const url = error.config?.url || '';
+        // Correção: removida a anotação :boolean (inválida em JS puro)
+        const isAuthRequest = url.includes('/auth/');
 
-        // Sessão expirada/inválida: limpa o token e volta ao login.
-        // Ignora /api/auth/* para o erro de "credenciais inválidas" aparecer na tela de login.
+        // Se for 401 e NÃO for um pedido de autenticação, limpa a sessão e redireciona
         if (error.response?.status === 401 && !isAuthRequest) {
             localStorage.removeItem('token');
 
             if (window.location.pathname !== '/login') {
+                // Correção: passado diretamente a string '/login'
                 window.location.assign('/login');
             }
         }

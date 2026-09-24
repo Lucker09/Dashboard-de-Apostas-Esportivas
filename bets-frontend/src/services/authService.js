@@ -4,7 +4,7 @@ import api from './api';
 // O token é anexado às requisições pelo interceptor do api.js.
 export const authService = {
     login: async (email, password) => {
-        const response = await api.post('/api/auth/login', { email, password });
+        const response = await api.post('/auth/login', { email, password });
         const token = response.data?.token;
 
         if (!token) {
@@ -16,7 +16,8 @@ export const authService = {
     },
 
     register: async (userData) => {
-        const response = await api.post('/api/register', userData);
+        // Como o baseURL do api.js já inclui /api, aqui chamamos apenas /register
+        const response = await api.post('/register', userData);
         return response.data;
     },
 

@@ -29,7 +29,7 @@ public class Aposta {
     @Column(name = "valor_apostado",  nullable = false, precision = 10, scale = 2)
     private BigDecimal valorApostado;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal odd;
 
     @Enumerated(EnumType.STRING)

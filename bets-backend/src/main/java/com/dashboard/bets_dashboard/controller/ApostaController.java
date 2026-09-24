@@ -2,6 +2,7 @@ package com.dashboard.bets_dashboard.controller;
 
 import com.dashboard.bets_dashboard.dto.ApostaRequestDTO;
 import com.dashboard.bets_dashboard.dto.ApostaResponseDTO;
+import com.dashboard.bets_dashboard.dto.LiquidarApostaDTO;
 import com.dashboard.bets_dashboard.model.User;
 import com.dashboard.bets_dashboard.service.ApostaService;
 import jakarta.validation.Valid;
@@ -41,5 +42,17 @@ public class ApostaController {
         return ResponseEntity.status(201).body(novaAposta);
     }
 
-    // Outros endpoints...
+    @PatchMapping("/{id}/liquidar")
+    public ResponseEntity<ApostaResponseDTO> liquidarAposta(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody @Valid LiquidarApostaDTO dto) {
+
+        User user = (User) authentication.getPrincipal();
+
+        // Certifique-se de que o seu ApostaService possui um método que aceita o DTO ou os parâmetros (status e valorResgatado)
+        ApostaResponseDTO resposta = apostaService.liquidarAposta(id,user.getId(), dto);
+
+        return ResponseEntity.ok(resposta);
+    }
 }

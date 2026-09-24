@@ -12,13 +12,16 @@ import com.dashboard.bets_dashboard.model.User;
 import com.dashboard.bets_dashboard.repository.ApostaRepository;
 import com.dashboard.bets_dashboard.repository.UserRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -32,18 +35,24 @@ public class ApostaService {
         this.userRepository = userRepository;
     }
 
-    // 1. Listar apostas paginadas do usuário (caso precise de paginação no futuro)
+    // 1. Listar apostas paginadas do usuário (Ordenadas por data de criação decrescente)
     @Transactional(readOnly = true)
     public Page<ApostaResponseDTO> listarApostasPorUsuario(Long userId, Pageable pageable) {
         if (!userRepository.existsById(userId)) {
             throw new IllegalArgumentException("Usuário não encontrado com ID: " + userId);
         }
 
-        return apostaRepository.findByUserId(userId, pageable)
+        Pageable pageableOrdenado = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "dataCriacao")
+        );
+
+        return apostaRepository.findByUserId(userId, pageableOrdenado)
                 .map(this::converterParaResponseDTO);
     }
 
-    // 1.5. Listar TODAS as apostas do usuário em formato de Lista (Ideal para o Dashboard/Gráficos)
+    // 1.5. Listar TODAS as apostas do usuário em formato de Lista (Ordenadas por data de criação decrescente)
     @Transactional(readOnly = true)
     public List<ApostaResponseDTO> listarTodasApostasPorUsuario(Long userId) {
         if (!userRepository.existsById(userId)) {
@@ -52,15 +61,25 @@ public class ApostaService {
 
         List<Aposta> apostas = apostaRepository.findByUserId(userId);
         return apostas.stream()
+                .sorted(Comparator.comparing(Aposta::getDataCriacao, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::converterParaResponseDTO)
                 .toList();
     }
 
-    // 2. Criar Aposta
+    // 2. Criar Aposta (com validação e débito no saldo)
     @Transactional
     public ApostaResponseDTO criarAposta(Long userId, ApostaRequestDTO dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com ID: " + userId));
+
+        // Validar se o usuário tem saldo suficiente para realizar a aposta
+        if (user.getSaldo().compareTo(dto.getValorApostado()) < 0) {
+            throw new IllegalArgumentException("Saldo insuficiente para realizar esta aposta.");
+        }
+
+        // Subtrair o valor apostado do saldo do usuário
+        user.setSaldo(user.getSaldo().subtract(dto.getValorApostado()));
+        userRepository.save(user);
 
         Aposta aposta = new Aposta();
         aposta.setUser(user);
@@ -73,7 +92,7 @@ public class ApostaService {
         return converterParaResponseDTO(salva);
     }
 
-    // 3. Liquidar Aposta
+    // 3. Liquidar Aposta (com atualização de saldo)
     @Transactional
     public ApostaResponseDTO liquidarAposta(Long apostaId, Long userId, LiquidarApostaDTO dto) {
         StatusAposta novoStatus = dto.getStatus();
@@ -103,6 +122,16 @@ public class ApostaService {
             }
             case PENDENTE -> throw new IllegalArgumentException("Não é possível liquidar uma aposta para o status PENDENTE.");
         };
+
+        // Atualizar o saldo do usuário com base no resultado da liquidação
+        User user = aposta.getUser();
+        if (novoStatus == StatusAposta.GREEN || novoStatus == StatusAposta.CASHOUT) {
+            user.setSaldo(user.getSaldo().add(valorResgatado));
+        } else if (novoStatus == StatusAposta.ANULADA) {
+            user.setSaldo(user.getSaldo().add(aposta.getValorApostado()));
+        }
+        // Nota: Status RED não altera o saldo neste momento, pois o valor já havia sido debitado na criação.
+        userRepository.save(user);
 
         aposta.setStatus(novoStatus);
         aposta.setValorResgatado(valorResgatado);

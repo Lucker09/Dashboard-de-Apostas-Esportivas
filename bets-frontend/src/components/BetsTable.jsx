@@ -64,6 +64,9 @@ export default function BetsTable() {
                 valorApostado: Number(newBet.valorApostado),
             });
 
+            // Disparar atualização do saldo (o valor foi debitado)
+            window.dispatchEvent(new CustomEvent('atualizar-saldo'));
+
             setIsModalOpen(false);
             setNewBet(EMPTY_BET);
 
@@ -85,6 +88,10 @@ export default function BetsTable() {
             setError('');
 
             await betsService.liquidateBet(id, status, valorResgatado);
+
+            // Disparar atualização do saldo (o prémio/cashout entrou na conta)
+            window.dispatchEvent(new CustomEvent('atualizar-saldo'));
+
             setCashoutBet(null);
             setCashoutValue('');
             await loadBets(page);
@@ -328,7 +335,7 @@ export default function BetsTable() {
                                     disabled={saving}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                                 >
-                                    {saving ? 'Salvando...' : 'Salvar Aposta'}
+                                    {saving ? 'A salvar...' : 'Salvar Aposta'}
                                 </button>
                             </div>
                         </form>
@@ -378,7 +385,7 @@ export default function BetsTable() {
                                     disabled={saving}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                                 >
-                                    {saving ? 'Salvando...' : 'Confirmar Cash-out'}
+                                    {saving ? 'A salvar...' : 'Confirmar Cash-out'}
                                 </button>
                             </div>
                         </form>
