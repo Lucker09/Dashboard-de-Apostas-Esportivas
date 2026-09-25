@@ -13,6 +13,12 @@ export const betsService = {
         return response.data;
     },
 
+    // Adicionado para suportar a edição/atualização de apostas e tags existentes
+    updateBet: async (id, betData) => {
+        const response = await api.put(`/apostas/${id}`, betData);
+        return response.data;
+    },
+
     liquidateBet: async (id, status, valorResgatado = null) => {
         const payload = { status };
 

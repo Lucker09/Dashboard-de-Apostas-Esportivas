@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,4 +23,7 @@ public class ApostaRequestDTO {
     @NotNull(message = "A odd é obrigatória")
     @DecimalMin(value = "1.01", message = "A odd mínima permitida é 1.01")
     private BigDecimal odd;
+
+    private Long casaDeApostaId;
+    private List<Long> tagIds;
 }

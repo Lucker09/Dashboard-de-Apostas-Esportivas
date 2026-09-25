@@ -266,7 +266,7 @@ export default function StatsDashboard() {
                     </div>
                 </div>
 
-                {/* 2. Tabela de Depósitos e Saques (Alinhada perfeitamente com a altura h-64 do gráfico ao lado) */}
+                {/* 2. Tabela de Depósitos e Saques */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
                     <div>
                         <div className="flex justify-between items-start mb-2">
@@ -294,17 +294,17 @@ export default function StatsDashboard() {
                                 {transacoes.map((t, index) => (
                                     <tr key={t.id || index} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
                                         <td className="p-2.5 text-xs text-gray-500 dark:text-gray-400">
-                                            {t.data ? new Date(t.data).toLocaleDateString('pt-BR') : 'N/A'}
+                                            {t.dataCriacao ? new Date(t.dataCriacao).toLocaleDateString('pt-BR') : (t.data ? new Date(t.data).toLocaleDateString('pt-BR') : 'N/A')}
                                         </td>
                                         <td className="p-2.5">
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                                    t.tipo === 'DEPOSITO'
-                                                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
-                                                        : 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400'
-                                                }`}>
-                                                    {t.tipo === 'DEPOSITO' ? <ArrowUpCircle size={10} /> : <ArrowDownCircle size={10} />}
-                                                    {t.tipo}
-                                                </span>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                                t.tipo === 'DEPOSITO'
+                                                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                                                    : 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400'
+                                            }`}>
+                                                {t.tipo === 'DEPOSITO' ? <ArrowUpCircle size={10} /> : <ArrowDownCircle size={10} />}
+                                                {t.tipo}
+                                            </span>
                                         </td>
                                         <td className={`p-2.5 text-right font-semibold text-xs ${
                                             t.tipo === 'DEPOSITO' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'

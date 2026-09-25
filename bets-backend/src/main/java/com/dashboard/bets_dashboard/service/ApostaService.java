@@ -7,9 +7,13 @@ import com.dashboard.bets_dashboard.dto.LiquidarApostaDTO;
 import com.dashboard.bets_dashboard.exception.ConflitoException;
 import com.dashboard.bets_dashboard.exception.RecursoNaoEncontradoException;
 import com.dashboard.bets_dashboard.model.Aposta;
+import com.dashboard.bets_dashboard.model.CasaDeAposta;
 import com.dashboard.bets_dashboard.model.StatusAposta;
+import com.dashboard.bets_dashboard.model.Tag;
 import com.dashboard.bets_dashboard.model.User;
 import com.dashboard.bets_dashboard.repository.ApostaRepository;
+import com.dashboard.bets_dashboard.repository.CasaDeApostaRepository;
+import com.dashboard.bets_dashboard.repository.TagRepository;
 import com.dashboard.bets_dashboard.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -29,17 +34,24 @@ public class ApostaService {
 
     private final ApostaRepository apostaRepository;
     private final UserRepository userRepository;
+    private final CasaDeApostaRepository casaDeApostaRepository;
+    private final TagRepository tagRepository;
 
-    public ApostaService(ApostaRepository apostaRepository, UserRepository userRepository) {
+    public ApostaService(ApostaRepository apostaRepository,
+                         UserRepository userRepository,
+                         CasaDeApostaRepository casaDeApostaRepository,
+                         TagRepository tagRepository) {
         this.apostaRepository = apostaRepository;
         this.userRepository = userRepository;
+        this.casaDeApostaRepository = casaDeApostaRepository;
+        this.tagRepository = tagRepository;
     }
 
-    // 1. Listar apostas paginadas do usuário (Ordenadas por data de criação decrescente)
+    // 1. Listar apostas paginadas do utilizador
     @Transactional(readOnly = true)
     public Page<ApostaResponseDTO> listarApostasPorUsuario(Long userId, Pageable pageable) {
         if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("Usuário não encontrado com ID: " + userId);
+            throw new IllegalArgumentException("Utilizador não encontrado com ID: " + userId);
         }
 
         Pageable pageableOrdenado = PageRequest.of(
@@ -52,11 +64,11 @@ public class ApostaService {
                 .map(this::converterParaResponseDTO);
     }
 
-    // 1.5. Listar TODAS as apostas do usuário em formato de Lista (Ordenadas por data de criação decrescente)
+    // 1.5. Listar TODAS as apostas do utilizador em formato de Lista
     @Transactional(readOnly = true)
     public List<ApostaResponseDTO> listarTodasApostasPorUsuario(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("Usuário não encontrado com ID: " + userId);
+            throw new IllegalArgumentException("Utilizador não encontrado com ID: " + userId);
         }
 
         List<Aposta> apostas = apostaRepository.findByUserId(userId);
@@ -66,20 +78,31 @@ public class ApostaService {
                 .toList();
     }
 
-    // 2. Criar Aposta (com validação e débito no saldo)
+    // 2. Criar Aposta
     @Transactional
     public ApostaResponseDTO criarAposta(Long userId, ApostaRequestDTO dto) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com ID: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException("Utilizador não encontrado com ID: " + userId));
 
-        // Validar se o usuário tem saldo suficiente para realizar a aposta
         if (user.getSaldo().compareTo(dto.getValorApostado()) < 0) {
             throw new IllegalArgumentException("Saldo insuficiente para realizar esta aposta.");
         }
 
-        // Subtrair o valor apostado do saldo do usuário
         user.setSaldo(user.getSaldo().subtract(dto.getValorApostado()));
         userRepository.save(user);
+
+        CasaDeAposta casaDeAposta = casaDeApostaRepository.findByIdAndUserId(dto.getCasaDeApostaId(), userId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Casa de aposta não encontrada ou não autorizada."));
+
+        HashSet<Tag> tagsSet = new HashSet<>();
+        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
+            List<Tag> tags = tagRepository.findAllById(dto.getTagIds());
+            boolean todasDoUtilizador = tags.stream().allMatch(t -> t.getUser().getId().equals(userId));
+            if (!todasDoUtilizador) {
+                throw new IllegalArgumentException("Uma ou mais tags não pertencem ao utilizador.");
+            }
+            tagsSet = new HashSet<>(tags);
+        }
 
         Aposta aposta = new Aposta();
         aposta.setUser(user);
@@ -87,12 +110,55 @@ public class ApostaService {
         aposta.setValorApostado(dto.getValorApostado());
         aposta.setOdd(dto.getOdd());
         aposta.setStatus(StatusAposta.PENDENTE);
+        aposta.setCasaDeAposta(casaDeAposta);
+        aposta.setTags(tagsSet);
 
         Aposta salva = apostaRepository.save(aposta);
         return converterParaResponseDTO(salva);
     }
 
-    // 3. Liquidar Aposta (com atualização de saldo)
+    // 2.5. Atualizar Aposta (para edição de tags e dados)
+    @Transactional
+    public ApostaResponseDTO atualizarAposta(Long id, Long userId, ApostaRequestDTO dto) {
+        Aposta aposta = apostaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Aposta não encontrada."));
+
+        if (!aposta.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("Não tem permissão para editar esta aposta.");
+        }
+
+        // Se o DTO não trouxer a casa de aposta (ex: ao atualizar apenas tags), mantém a atual
+        Long casaId = (dto.getCasaDeApostaId() != null)
+                ? dto.getCasaDeApostaId()
+                : aposta.getCasaDeAposta().getId();
+
+        CasaDeAposta casaDeAposta = casaDeApostaRepository.findByIdAndUserId(casaId, userId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Casa de aposta não encontrada ou não autorizada."));
+
+        HashSet<Tag> tagsSet = new HashSet<>();
+        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
+            List<Tag> tags = tagRepository.findAllById(dto.getTagIds());
+            boolean todasDoUtilizador = tags.stream().allMatch(t -> t.getUser().getId().equals(userId));
+            if (!todasDoUtilizador) {
+                throw new IllegalArgumentException("Uma ou mais tags não pertencem ao utilizador.");
+            }
+            tagsSet = new HashSet<>(tags);
+        }
+
+        aposta.setDescricao(dto.getDescricao() != null ? dto.getDescricao() : aposta.getDescricao());
+        aposta.setOdd(dto.getOdd() != null ? dto.getOdd() : aposta.getOdd());
+        aposta.setValorApostado(dto.getValorApostado() != null ? dto.getValorApostado() : aposta.getValorApostado());
+        if (dto.getValorApostado() != null && dto.getOdd() != null) {
+            aposta.setRetornoPotencial(dto.getValorApostado().multiply(dto.getOdd()));
+        }
+        aposta.setCasaDeAposta(casaDeAposta);
+        aposta.setTags(tagsSet);
+
+        Aposta atualizada = apostaRepository.save(aposta);
+        return converterParaResponseDTO(atualizada);
+    }
+
+    // 3. Liquidar Aposta
     @Transactional
     public ApostaResponseDTO liquidarAposta(Long apostaId, Long userId, LiquidarApostaDTO dto) {
         StatusAposta novoStatus = dto.getStatus();
@@ -123,14 +189,12 @@ public class ApostaService {
             case PENDENTE -> throw new IllegalArgumentException("Não é possível liquidar uma aposta para o status PENDENTE.");
         };
 
-        // Atualizar o saldo do usuário com base no resultado da liquidação
         User user = aposta.getUser();
         if (novoStatus == StatusAposta.GREEN || novoStatus == StatusAposta.CASHOUT) {
             user.setSaldo(user.getSaldo().add(valorResgatado));
         } else if (novoStatus == StatusAposta.ANULADA) {
             user.setSaldo(user.getSaldo().add(aposta.getValorApostado()));
         }
-        // Nota: Status RED não altera o saldo neste momento, pois o valor já havia sido debitado na criação.
         userRepository.save(user);
 
         aposta.setStatus(novoStatus);
@@ -209,7 +273,7 @@ public class ApostaService {
                 .build();
     }
 
-    // 5. Buscar aposta por ID do utilizador
+    // 5. Buscar aposta por ID
     @Transactional(readOnly = true)
     public ApostaResponseDTO buscarPorId(Long apostaId, Long userId) {
         Aposta aposta = apostaRepository.findByIdAndUserId(apostaId, userId)
@@ -218,7 +282,6 @@ public class ApostaService {
         return converterParaResponseDTO(aposta);
     }
 
-    // Método privado auxiliar para conversão
     private ApostaResponseDTO converterParaResponseDTO(Aposta aposta) {
         BigDecimal pnl = BigDecimal.ZERO;
 
@@ -237,6 +300,8 @@ public class ApostaService {
                 .profitAndLoss(pnl)
                 .dataCriacao(aposta.getDataCriacao())
                 .dataLiquidacao(aposta.getDataLiquidacao())
+                .casaDeAposta(aposta.getCasaDeAposta()) // Incluído corretamente
+                .tags(aposta.getTags())                 // Incluído corretamente
                 .build();
     }
 }

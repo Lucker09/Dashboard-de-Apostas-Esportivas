@@ -42,6 +42,17 @@ public class ApostaController {
         return ResponseEntity.status(201).body(novaAposta);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApostaResponseDTO> atualizarAposta(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody @Valid ApostaRequestDTO dto) {
+
+        User user = (User) authentication.getPrincipal();
+        ApostaResponseDTO resposta = apostaService.atualizarAposta(id, user.getId(), dto);
+        return ResponseEntity.ok(resposta);
+    }
+
     @PatchMapping("/{id}/liquidar")
     public ResponseEntity<ApostaResponseDTO> liquidarAposta(
             Authentication authentication,
@@ -50,7 +61,6 @@ public class ApostaController {
 
         User user = (User) authentication.getPrincipal();
 
-        // Certifique-se de que o seu ApostaService possui um método que aceita o DTO ou os parâmetros (status e valorResgatado)
         ApostaResponseDTO resposta = apostaService.liquidarAposta(id,user.getId(), dto);
 
         return ResponseEntity.ok(resposta);

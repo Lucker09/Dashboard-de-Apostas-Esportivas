@@ -5,6 +5,7 @@ const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(() => authService.getCurrentToken());
+    const [loading] = useState(false);
 
     const login = async (email, password) => {
         const data = await authService.login(email, password);
@@ -22,6 +23,7 @@ export const AuthProvider = ({ children }) => {
             value={{
                 token,
                 isAuthenticated: !!token,
+                loading,
                 login,
                 logout,
             }}
@@ -31,5 +33,4 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

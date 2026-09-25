@@ -1,47 +1,68 @@
 package com.dashboard.bets_dashboard.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "apostas")
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@Builder
 public class Aposta {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     @Column(nullable = false)
     private String descricao;
 
-    @Column(name = "valor_apostado",  nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal valorApostado;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal odd;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal retornoPotencial;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatusAposta status = StatusAposta.PENDENTE;
+    private StatusAposta status; // Ex: PENDENTE, GREEN, RED, CASHOUT, ANULADA
 
-    @Column(name = "valor_resgatado", precision = 10, scale = 2)
+    @Column(precision = 10, scale = 2)
+    private BigDecimal lucroOuPrejuizo;
+
+    // Campos adicionados para suportar a liquidação e cálculo no serviço:
+    @Column(precision = 10, scale = 2)
     private BigDecimal valorResgatado;
 
-    @Column(name = "data_criacao", nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
-    @Column(name = "data_liquidacao")
     private LocalDateTime dataLiquidacao;
+
+    // Relação Obrigatória com a Casa de Aposta (Many-to-One)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "casa_de_aposta_id", nullable = false)
+    private CasaDeAposta casaDeAposta;
+
+    // Relação Many-to-Many com Tags (Opcional)
+    @ManyToMany
+    @JoinTable(
+            name = "aposta_tags",
+            joinColumns = @JoinColumn(name = "aposta_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    @Builder.Default
+    private Set<Tag> tags = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }

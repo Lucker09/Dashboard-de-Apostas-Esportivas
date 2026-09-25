@@ -42,15 +42,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             userEmail = jwtUtil.extrairEmail(token);
+            System.out.println(">>> E-MAIL EXTRAÍDO COM SUCESSO: " + userEmail);
         } catch (JwtException | IllegalArgumentException e) {
-            // Token expirado, malformado ou com assinatura inválida:
-            // segue sem autenticar e o Spring Security responde 401 se a rota exigir login.
+            System.out.println(">>> ERRO DE VALIDAÇÃO DO TOKEN (JwtException): " + e.getMessage());
             filterChain.doFilter(request, response);
             return;
         }
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             var userOptional = userRepository.findByEmail(userEmail);
+            System.out.println(">>> UTILIZADOR ENCONTRADO NA BASE DE DADOS? " + userOptional.isPresent());
 
             if (userOptional.isPresent() && jwtUtil.validarToken(token, userEmail)) {
                 var user = userOptional.get();
@@ -58,6 +59,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                System.out.println(">>> AUTENTICAÇÃO DEFINIDA COM SUCESSO PARA: " + userEmail);
+            } else {
+                System.out.println(">>> FALHA: O token não é válido ou o utilizador não bate certo.");
             }
         }
 

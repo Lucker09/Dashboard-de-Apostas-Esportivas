@@ -1,29 +1,23 @@
 import api from './api';
 
-// Único ponto que fala com a API de autenticação.
-// O token é anexado às requisições pelo interceptor do api.js.
 export const authService = {
     login: async (email, password) => {
         const response = await api.post('/auth/login', { email, password });
-        const token = response.data?.token;
+        const data = response.data;
 
-        if (!token) {
-            throw new Error('O backend não retornou um token de autenticação.');
+        // Garante que o token é salvo com a chave 'token' exata
+        if (data.token) {
+            localStorage.setItem('token', data.token);
         }
 
-        localStorage.setItem('token', token);
-        return response.data;
-    },
-
-    register: async (userData) => {
-        // Como o baseURL do api.js já inclui /api, aqui chamamos apenas /register
-        const response = await api.post('/register', userData);
-        return response.data;
+        return data;
     },
 
     logout: () => {
         localStorage.removeItem('token');
     },
 
-    getCurrentToken: () => localStorage.getItem('token'),
+    getCurrentToken: () => {
+        return localStorage.getItem('token');
+    }
 };

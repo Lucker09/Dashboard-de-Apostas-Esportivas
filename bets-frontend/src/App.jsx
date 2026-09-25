@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } f
 import { Wallet, PlusCircle, MinusCircle } from 'lucide-react';
 import BetsTable from './components/BetsTable';
 import StatsDashboard from './components/StatsDashboard';
+import GerirCasasETags from './components/GerirCasasETags'; // <--- Importado aqui (ajuste o caminho se necessário)
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { useAuth } from './context/AuthContext';
@@ -46,7 +47,6 @@ function Navbar() {
             carregarSaldo();
         }
 
-        // Ouvir o evento global para atualizar o saldo automaticamente
         const handleAtualizarSaldo = () => carregarSaldo();
         window.addEventListener('atualizar-saldo', handleAtualizarSaldo);
 
@@ -116,6 +116,9 @@ function Navbar() {
                     <nav className="flex items-center space-x-4 border-l pl-4 border-gray-200 dark:border-gray-700">
                         <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium text-sm transition">
                             Minhas Apostas
+                        </Link>
+                        <Link to="/gerir" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium text-sm transition">
+                            Casas e Tags
                         </Link>
                         <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium text-sm transition">
                             Estatísticas
@@ -210,6 +213,15 @@ export default function App() {
                             element={
                                 <PrivateRoute>
                                     <BetsTable />
+                                </PrivateRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/gerir"
+                            element={
+                                <PrivateRoute>
+                                    <GerirCasasETags />
                                 </PrivateRoute>
                             }
                         />
