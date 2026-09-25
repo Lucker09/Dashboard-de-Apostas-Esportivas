@@ -90,25 +90,32 @@ export default function StatsDashboard() {
         .filter(t => t.tipo === 'SAQUE')
         .reduce((acc, t) => acc + (t.valor || 0), 0);
 
-    const netDeposits = totalDeposits - totalWithdrawals;
-
-    // 4. Agrupar dados por dia para os Gráficos
+    // 4. Agrupar e Ordenar dados por dia para os Gráficos (Mais antigo -> Mais novo)
     const getChartData = () => {
         const map = {};
 
         filteredBets.forEach(b => {
             if (!b.dataCriacao) return;
-            const dateStr = new Date(b.dataCriacao).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+            const dateObj = new Date(b.dataCriacao);
 
-            if (!map[dateStr]) {
-                map[dateStr] = { label: dateStr, profit: 0, staked: 0 };
+            // Chave padronizada para ordenação correta (YYYY-MM-DD)
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
+
+            const label = dateObj.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+            if (!map[dateKey]) {
+                map[dateKey] = { dateKey, label, profit: 0, staked: 0 };
             }
 
-            map[dateStr].profit += (b.profitAndLoss || 0);
-            map[dateStr].staked += (b.valorApostado || 0);
+            map[dateKey].profit += (b.profitAndLoss || 0);
+            map[dateKey].staked += (b.valorApostado || 0);
         });
 
-        return Object.values(map);
+        // Ordena por ordem crescente (do dia mais antigo para o mais recente)
+        return Object.values(map).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
     };
 
     const chartData = getChartData();
@@ -269,14 +276,19 @@ export default function StatsDashboard() {
                 {/* 2. Tabela de Depósitos e Saques */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
                     <div>
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                             <div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">Depósitos e Saques</h2>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Histórico de movimentações da conta</p>
                             </div>
-                            <span className={`text-sm font-semibold px-2.5 py-1 rounded-lg ${netDeposits >= 0 ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400'}`}>
-                                Líquido: R$ {netDeposits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
+                            <div className="flex items-center gap-2 text-xs font-semibold">
+                                <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                                    Depósitos: R$ {totalDeposits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                                <span className="px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400">
+                                    Saques: R$ {totalWithdrawals.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
